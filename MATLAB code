@@ -1,0 +1,26 @@
+% Parameters
+Fs = 100e6;            % Sampling Frequency (Hz)
+Fc = 10e6;             % Cutoff Frequency (Hz)
+N = 8;                 % Filter order (8 + 1 = 9 taps)
+
+% Normalized cutoff frequency
+Wn = Fc / (Fs/2);      % Normalize to Nyquist (0 to 1)
+
+% Design Low-pass FIR filter using Hamming window
+b = fir1(N, Wn, 'low', hamming(N+1));  % Low-pass filter
+
+% Scale to 16-bit signed fixed-point (Q1.15)
+b_fixed = round(b * 2^15);
+
+% Display results
+disp('FIR Coefficients (float):');
+disp(b);
+
+disp('FIR Coefficients (fixed-point, decimal):');
+disp(b_fixed);
+
+disp('FIR Coefficients (fixed-point, hex for Verilog):');
+disp(dec2hex(typecast(int16(b_fixed), 'uint16'))); % Show hex values
+
+% Optional: Frequency response plot
+fvtool(b, 1);   % Visualize the filter (requires DSP toolbox)
