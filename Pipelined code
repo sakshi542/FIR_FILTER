@@ -1,0 +1,59 @@
+module FIR_9(
+input clk,
+input signed [15:0] noisy_signal,
+output signed [15:0] filtered_signal
+ );
+ 
+ integer i,j;
+ 
+reg signed [15:0] coeff [0:8]; // Declare the array
+initial begin
+ coeff[0] = 16'sh0039; // 0.0018
+ coeff[1] = 16'h0A6; // 0.0074
+ coeff[2] = 16'h03C2; // 0.0239
+ coeff[3] = 16'h0E2D; // 0.0512
+ coeff[4] = 16'h22AF; // 0.0625
+ coeff[5] = 16'h1C13; // 0.0512
+ coeff[6] = 16'h0E2D; // 0.0239
+ coeff[7] = 16'h03C2; // 0.0074
+ coeff[8] = 16'h00A6; // 0.0018
+end
+// For 9-tap FIR
+reg signed [15:0] delayed_signal [0:8]; // store delayed input samples
+reg signed [31:0] prod [0:8]; // products: input * coefficient
+reg signed [32:0] sum0 [0:4]; // sum of pairs of products
+reg signed [33:0] sum1 [0:2];
+reg signed [34:0] sum2 [0:1];
+reg signed [35:0] sum3; // final sum of the above
+always @(posedge clk) begin
+delayed_signal[0] <= noisy_signal;
+for(i=1;i<=8;i=i+1) begin
+delayed_signal[i] <= delayed_signal[i-1];
+end
+end
+always @(posedge clk) begin
+for(j=0;j<=8; j=j+1) begin
+prod[j] <= delayed_signal[j]*coeff[j];
+end
+end
+always @(posedge clk) begin
+sum0[0] <= prod[0] + prod[1];
+sum0[1] <= prod[2]+prod[3];
+sum0[2] <= prod[4] + prod[5];
+sum0[3] <= prod[6] + prod[7];
+sum0[4] <= prod[8];
+end
+always @(posedge clk) begin
+sum1[0] <= sum0[0] +sum0[1];
+sum1[1] <= sum0[2]+ sum0[3];
+sum1[2] <= sum0[3]; 
+end
+always @(posedge clk) begin
+sum2[0] <= sum1[0] +sum1[1];
+sum2[1] <= sum1[2];
+end
+always @(posedge clk) begin
+sum3 <= sum2[0] +sum2[1];
+end
+assign filtered_signal = $signed(sum3[35:15]);
+endmodule
